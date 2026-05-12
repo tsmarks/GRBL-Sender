@@ -1,0 +1,450 @@
+<UserControl x:Class="GRBL_Lathe_Control.Controls.AppSettingsPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="800"
+             d:DesignWidth="700">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="Program Settings" Style="{StaticResource SectionTitleStyle}" FontSize="22"/>
+                <TextBlock Text="{Binding MachineModeDisplayName, StringFormat=Active mode: {0}. Settings are shared across the app and grouped below by area.}"
+                           Style="{StaticResource LabelTextStyle}"
+                           TextWrapping="Wrap"
+                           Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="General" Style="{StaticResource SectionTitleStyle}" FontSize="18"/>
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="COM Port" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2"
+                                  Style="{StaticResource InputComboBoxStyle}"
+                                  ItemsSource="{Binding AvailablePorts}"
+                                  SelectedItem="{Binding SelectedPort}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Baud Rate" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding BaudRateInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Work Coordinate System" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2"
+                                  Style="{StaticResource InputComboBoxStyle}"
+                                  ItemsSource="{Binding WorkCoordinateSystems}"
+                                  SelectedItem="{Binding SelectedWorkCoordinateSystem}"/>
+                    </Grid>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Controller Settings" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="2">
+                            <Button Content="Read Settings"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,8"
+                                    ToolTip="Read $$ from the connected controller and apply $30 spindle max, $110-$114 feed rates, and $6 probe mode."
+                                    Command="{Binding ReadControllerSettingsCommand}"/>
+                            <TextBlock Text="{Binding ProbePinModeText}"
+                                       Style="{StaticResource BodyTextStyle}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Visibility="{Binding IsLatheMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="Lathe Settings" Style="{StaticResource SectionTitleStyle}" FontSize="18"/>
+                    <TextBlock Text="Lathe jog and touch-off values."
+                               Style="{StaticResource LabelTextStyle}"
+                               Margin="0,8,0,0"/>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Lathe Spindle Max S" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding LatheSpindleMaxSpeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="X Jog Step" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2"
+                                  Style="{StaticResource InputComboBoxStyle}"
+                                  ItemsSource="{Binding XJogSteps}"
+                                  SelectedItem="{Binding SelectedXJogStep}"/>
+                        <TextBox Grid.Column="4"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding XJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Z Jog Step" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2"
+                                  Style="{StaticResource InputComboBoxStyle}"
+                                  ItemsSource="{Binding ZJogSteps}"
+                                  SelectedItem="{Binding SelectedZJogStep}"/>
+                        <TextBox Grid.Column="4"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding ZJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Touch Diameter" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding DiameterTouchOffInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Visibility="{Binding IsMillMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="Mill Motion Settings" Style="{StaticResource SectionTitleStyle}" FontSize="18"/>
+                    <TextBlock Text="Mill jog step and feed values."
+                               Style="{StaticResource LabelTextStyle}"
+                               Margin="0,8,0,0"/>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Mill Spindle Max S" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 Text="{Binding MillSpindleMaxSpeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="X" Style="{StaticResource BodyTextStyle}" FontFamily="Consolas" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding LinearJogSteps}" SelectedItem="{Binding SelectedXJogStep}"/>
+                        <TextBox Grid.Column="4" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding XJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Y" Style="{StaticResource BodyTextStyle}" FontFamily="Consolas" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding LinearJogSteps}" SelectedItem="{Binding SelectedYJogStep}"/>
+                        <TextBox Grid.Column="4" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding YJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Z" Style="{StaticResource BodyTextStyle}" FontFamily="Consolas" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding ZJogSteps}" SelectedItem="{Binding SelectedZJogStep}"/>
+                        <TextBox Grid.Column="4" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ZJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="A" Style="{StaticResource BodyTextStyle}" FontFamily="Consolas" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding RotaryJogSteps}" SelectedItem="{Binding SelectedAJogStep}"/>
+                        <TextBox Grid.Column="4" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding AJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="B" Style="{StaticResource BodyTextStyle}" FontFamily="Consolas" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding RotaryJogSteps}" SelectedItem="{Binding SelectedBJogStep}"/>
+                        <TextBox Grid.Column="4" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding BJogFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Margin="0,0,0,18"
+                    Visibility="{Binding IsMillMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="Mill Tool Probe Settings" Style="{StaticResource SectionTitleStyle}" FontSize="18"/>
+                    <TextBlock Text="Fixed machine positions and probe cycle settings."
+                               Style="{StaticResource LabelTextStyle}"
+                               Margin="0,8,0,0"/>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Change X" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolChangeXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Change Y" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolChangeYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Safe Z" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolChangeSafeZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Reference Plate X" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ReferencePlateXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Reference Plate Y" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ReferencePlateYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Probe Start Z" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeStartZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Use Tool Setter" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <CheckBox Grid.Column="2"
+                                  Style="{StaticResource InlineCheckBoxStyle}"
+                                  Content="Run tool probes on the fixed setter"
+                                  IsChecked="{Binding UseToolSetter, Mode=TwoWay}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Setter X" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolSetterXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Setter Y" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolSetterYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Setter Probe Z" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ToolSetterProbeZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tool Setter Offset" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 ToolTip="Setter touch Z minus reference plate touch Z. The Setter Offset button can calculate this."
+                                 Text="{Binding ToolSetterOffsetInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Probe Travel" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeTravelInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Probe Feed" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Fine Probe Feed" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeFineFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Pull-Off" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeRetractInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Minimum Machine Z" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 ToolTip="Lowest machine Z allowed during downward probe moves. Leave blank to disable the Z travel guard."
+                                 Text="{Binding ProbeMinimumMachineZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Z Probe Clearance" Style="{StaticResource LabelTextStyle}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="2"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Margin="0"
+                                 ToolTip="Clearance held above Minimum Machine Z when probe travel is clamped."
+                                 Text="{Binding ProbeMinimumClearanceInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Save Settings"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    HorizontalAlignment="Right"
+                    Margin="0"
+                    Padding="18,10"
+                    Command="{Binding SaveSettingsCommand}"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

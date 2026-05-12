@@ -223,6 +223,49 @@ public sealed class GrblClient : IDisposable
         return SendCommandAsync(builder.ToString(), cancellationToken);
     }
 
+    public async Task MoveRelativeAsync(
+        double? x = null,
+        double? y = null,
+        double? z = null,
+        double? a = null,
+        double? b = null,
+        double? feedRateMillimetersPerMinute = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!x.HasValue && !y.HasValue && !z.HasValue && !a.HasValue && !b.HasValue)
+        {
+            throw new ArgumentException("At least one relative axis move is required.");
+        }
+
+        if (!feedRateMillimetersPerMinute.HasValue || feedRateMillimetersPerMinute.Value <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(feedRateMillimetersPerMinute), "A positive feed rate is required.");
+        }
+
+        var builder = new StringBuilder("G91 G21 G1");
+        AppendAxis(builder, "X", x);
+        AppendAxis(builder, "Y", y);
+        AppendAxis(builder, "Z", z);
+        AppendAxis(builder, "A", a);
+        AppendAxis(builder, "B", b);
+        builder.Append(CultureInfo.InvariantCulture, $" F{feedRateMillimetersPerMinute.Value:0.###}");
+
+        try
+        {
+            await SendCommandAsync(builder.ToString(), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            try
+            {
+                await SendCommandAsync("G90", cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+    }
+
     public Task SetWorkCoordinateOffsetAsync(
         double? x = null,
         double? y = null,
@@ -387,6 +430,82 @@ public sealed class GrblClient : IDisposable
     public Task UnlockAsync(CancellationToken cancellationToken = default)
     {
         return SendCommandAsync("$X", cancellationToken);
+    }
+
+    public async Task<string?> SendTerminalCommandAsync(string command, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            throw new ArgumentException("A terminal command is required.", nameof(command));
+        }
+
+        var trimmedCommand = command.Trim();
+        switch (trimmedCommand)
+        {
+            case "!":
+                await FeedHoldAsync().ConfigureAwait(false);
+                return "realtime ! sent";
+            case "~":
+                await ResumeAsync().ConfigureAwait(false);
+                return "realtime ~ sent";
+            case "?":
+                await SendRealtimeCommandAsync((byte)'?').ConfigureAwait(false);
+                return "realtime ? sent";
+            case "\u0018":
+            case "^X":
+            case "CTRL-X":
+            case "CTRL+X":
+                await SoftResetAsync().ConfigureAwait(false);
+                return "realtime Ctrl-X sent";
+            default:
+                return await SendCommandAsync(trimmedCommand, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<IReadOnlyDictionary<int, double>> ReadSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = new Dictionary<int, double>();
+        var settingsLock = new object();
+
+        void CaptureSettingLine(object? sender, string line)
+        {
+            if (!TryParseSettingLine(line, out var settingNumber, out var settingValue))
+            {
+                return;
+            }
+
+            lock (settingsLock)
+            {
+                settings[settingNumber] = settingValue;
+            }
+        }
+
+        MessageReceived += CaptureSettingLine;
+        try
+        {
+            await SendCommandAsync("$$", cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            MessageReceived -= CaptureSettingLine;
+        }
+
+        lock (settingsLock)
+        {
+            return new Dictionary<int, double>(settings);
+        }
+    }
+
+    public Task SetSettingAsync(int settingNumber, double value, CancellationToken cancellationToken = default)
+    {
+        if (settingNumber < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(settingNumber), "GRBL setting number must be zero or greater.");
+        }
+
+        return SendCommandAsync(
+            string.Create(CultureInfo.InvariantCulture, $"${settingNumber}={value:0.###}"),
+            cancellationToken);
     }
 
     public Task SetSpindleSpeedAsync(int spindleSpeed, CancellationToken cancellationToken = default)
@@ -618,6 +737,39 @@ public sealed class GrblClient : IDisposable
                 return;
             }
         }
+    }
+
+    private static bool TryParseSettingLine(string line, out int settingNumber, out double settingValue)
+    {
+        settingNumber = 0;
+        settingValue = 0;
+
+        if (string.IsNullOrWhiteSpace(line) || !line.StartsWith("$", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var equalsIndex = line.IndexOf('=');
+        if (equalsIndex <= 1)
+        {
+            return false;
+        }
+
+        var settingText = line[1..equalsIndex].Trim();
+        if (!int.TryParse(settingText, NumberStyles.Integer, CultureInfo.InvariantCulture, out settingNumber))
+        {
+            return false;
+        }
+
+        var valueText = line[(equalsIndex + 1)..].Trim();
+        var valueEndIndex = valueText.IndexOfAny([' ', '\t', '(']);
+        if (valueEndIndex >= 0)
+        {
+            valueText = valueText[..valueEndIndex];
+        }
+
+        return double.TryParse(valueText, NumberStyles.Float, CultureInfo.InvariantCulture, out settingValue) ||
+               double.TryParse(valueText, NumberStyles.Float, CultureInfo.CurrentCulture, out settingValue);
     }
 
     private void WriteLine(string command)

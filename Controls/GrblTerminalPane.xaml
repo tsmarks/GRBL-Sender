@@ -1,0 +1,57 @@
+<UserControl x:Class="GRBL_Lathe_Control.Controls.GrblTerminalPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="700"
+             d:DesignWidth="700">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="GRBL Terminal" Style="{StaticResource SectionTitleStyle}" FontSize="22"/>
+            <TextBlock Text="Newest controller messages are shown first. Enter a line command such as $I or a realtime command like ?, !, ~, or Ctrl-X."
+                       Style="{StaticResource LabelTextStyle}"
+                       TextWrapping="Wrap"
+                       Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <ListBox Grid.Row="2"
+                 ItemsSource="{Binding ControllerLog}"
+                 Background="#0C1728"
+                 BorderBrush="{StaticResource InputBorderBrush}"
+                 BorderThickness="1"
+                 Foreground="{StaticResource ValueBrush}"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 Padding="6"/>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0"
+                     Style="{StaticResource InputTextBoxStyle}"
+                     Margin="0"
+                     ToolTip="Send a direct command to the connected GRBL controller."
+                     Text="{Binding TerminalCommandInput, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <Button Grid.Column="2"
+                    Content="Send"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Margin="0"
+                    ToolTip="Send the typed command to the connected GRBL controller."
+                    Command="{Binding SendTerminalCommandCommand}"/>
+        </Grid>
+    </Grid>
+</UserControl>

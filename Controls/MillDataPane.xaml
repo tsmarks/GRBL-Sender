@@ -59,94 +59,33 @@
 
         <TabItem Header="Tool Probe" Style="{StaticResource PreviewTabItemStyle}">
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="16"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="16"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="Tool Probe" Style="{StaticResource SectionTitleStyle}" FontSize="22"/>
-                        <TextBlock Text="Zero the work with the reference tool first. Then use Calibrate Plate Reference to move to the fixed tool-change plate and probe it automatically. Later tool probes use the difference between the saved reference touch and the newly touched tool to keep work Z aligned."
-                                   Style="{StaticResource LabelTextStyle}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,8,0,0"/>
-                    </StackPanel>
-
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Tool Change X (Machine)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ToolChangeXInput, UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock Text="Tool Change Y (Machine)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ToolChangeYInput, UpdateSourceTrigger=PropertyChanged}"/>
-                            <Button Content="Capture Current X / Y"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,0,12"
-                                    ToolTip="Store the current machine X and Y as the tool-change position."
-                                    Command="{Binding CaptureToolChangePositionCommand}"/>
-
-                            <TextBlock Text="Safe Z (Machine)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ToolChangeSafeZInput, UpdateSourceTrigger=PropertyChanged}"/>
-                            <TextBlock Text="Probe Start Z (Machine)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ProbeStartZInput, UpdateSourceTrigger=PropertyChanged}"/>
-                            <Button Content="Capture Current Z"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0"
-                                    ToolTip="Store the current machine Z as the probe start Z position."
-                                    Command="{Binding CaptureProbeStartZCommand}"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Probe Travel (mm)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ProbeTravelInput, UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock Text="Probe Feed (mm/min)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ProbeFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock Text="Fine Probe Feed (mm/min)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ProbeFineFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
-
-                            <TextBlock Text="Pull-Off (mm)" Style="{StaticResource LabelTextStyle}"/>
-                            <TextBox Style="{StaticResource InputTextBoxStyle}"
-                                     Margin="0,0,0,10"
-                                     Text="{Binding ProbeRetractInput, UpdateSourceTrigger=PropertyChanged}"/>
-                            <TextBlock Text="{Binding MillToolProbeStatusText}"
-                                       Style="{StaticResource LabelTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,4,0,0"/>
-                            <TextBlock Text="Tip: the probe cycle now rapids to safe Z, moves to tool-change X/Y, rapids down to Probe Start Z, probes at the coarse feed, pulls off, then probes again at the fine feed. The second touch point is the one used for calibration and tool-length updates."
+                        <StackPanel>
+                            <TextBlock Text="Tool Probe" Style="{StaticResource SectionTitleStyle}" FontSize="22"/>
+                            <TextBlock Text="Zero the work with the reference tool first. Calibrate the reference plate, then tool probes compare the new tool touch to that saved reference. Turn on Tool Setter when the normal tool probes should happen on a separate fixed setter."
                                        Style="{StaticResource LabelTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="0,8,0,0"/>
+                            <WrapPanel Margin="0,8,0,0">
+                                <CheckBox Content="NC Probe ($6=1)"
+                                          Style="{StaticResource InlineCheckBoxStyle}"
+                                          Margin="0,0,14,0"
+                                          ToolTip="Toggle GRBL $6 probe pin invert. Off is NO ($6=0), on is NC ($6=1)."
+                                          IsEnabled="{Binding IsConnected}"
+                                          IsChecked="{Binding IsProbeNormallyClosed, Mode=TwoWay}"/>
+                                <CheckBox Content="Use Tool Setter"
+                                          Style="{StaticResource InlineCheckBoxStyle}"
+                                          Margin="0,0,14,0"
+                                          ToolTip="Use the saved tool setter position and setter offset for Run Tool Probe."
+                                          IsChecked="{Binding UseToolSetter, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding ProbePinModeText}"
+                                           Style="{StaticResource BodyTextStyle}"
+                                           VerticalAlignment="Center"/>
+                            </WrapPanel>
                         </StackPanel>
-                    </Grid>
 
-                    <StackPanel Grid.Row="4">
-                        <WrapPanel>
+                        <WrapPanel Margin="0,14,0,0">
                             <Button Content="Go Safe Z"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,12,12"
@@ -155,28 +94,185 @@
                             <Button Content="Go To Tool Change"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,12,12"
-                                    ToolTip="Raise to safe Z, then move to the configured machine X/Y tool-change plate position."
+                                    ToolTip="Raise to safe Z, then move to the configured tool-change machine X/Y position."
                                     Command="{Binding GoToToolChangeCommand}"/>
                             <Button Content="Go To X / Y Zero"
                                     Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,0,12"
+                                    Margin="0,0,12,12"
                                     ToolTip="Move in work coordinates to X0 Y0 using the current jog feeds."
                                     Command="{Binding GoToXYZeroCommand}"/>
-                        </WrapPanel>
-                        <WrapPanel>
                             <Button Content="Calibrate Plate Reference"
                                     Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,12,0"
-                                    ToolTip="Move to the tool-change plate, run the two-stage reference-tool probe cycle, and save the final fine-touch machine Z as the master reference."
+                                    Margin="0,0,12,12"
+                                    ToolTip="Move to the reference plate, run the two-stage reference-tool probe cycle, and save the final fine-touch work Z as the master reference."
                                     Command="{Binding CalibrateToolProbePlateCommand}"/>
                             <Button Content="Run Tool Probe"
                                     Style="{StaticResource PrimaryButtonStyle}"
-                                    Margin="0"
-                                    ToolTip="Move to the tool-change plate, run the two-stage tool probe, and adjust work Z from the stored fine-touch reference."
+                                    Margin="0,0,0,12"
+                                    ToolTip="Run the two-stage tool probe on either the reference plate or tool setter, then adjust work Z from the stored reference."
                                     Command="{Binding RunToolProbeCommand}"/>
                         </WrapPanel>
+
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Tool Change Position" Style="{StaticResource SectionTitleStyle}" FontSize="16"/>
+                                <TextBlock Text="Machine X/Y used for changing tools. Safe Z is shared by all tool probe moves."
+                                           Style="{StaticResource LabelTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,8"/>
+                                <TextBlock Text="Tool Change X (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolChangeXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Tool Change Y (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolChangeYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Safe Z (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolChangeSafeZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Content="Capture Tool Change X / Y"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Store the current machine X and Y as the tool-change position."
+                                        Command="{Binding CaptureToolChangePositionCommand}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Reference Plate" Style="{StaticResource SectionTitleStyle}" FontSize="16"/>
+                                <TextBlock Text="Fixed machine X/Y for the reference plate and the machine Z used before probing downward."
+                                           Style="{StaticResource LabelTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,8"/>
+                                <TextBlock Text="Reference Plate X (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ReferencePlateXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Reference Plate Y (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ReferencePlateYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Content="Capture Plate X / Y"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Margin="0,0,0,8"
+                                        ToolTip="Store the current machine X and Y as the reference plate position."
+                                        Command="{Binding CaptureReferencePlatePositionCommand}"/>
+                                <TextBlock Text="Probe Start Z (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ProbeStartZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Content="Capture Probe Start Z"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Store the current machine Z as the reference plate probe start Z."
+                                        Command="{Binding CaptureProbeStartZCommand}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Tool Setter" Style="{StaticResource SectionTitleStyle}" FontSize="16"/>
+                                <TextBlock Text="Optional fixed setter location. Offset is setter touch Z minus reference plate touch Z."
+                                           Style="{StaticResource LabelTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,8"/>
+                                <TextBlock Text="Setter X (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolSetterXInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Setter Y (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolSetterYInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Setter Probe Z (Machine)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,8" Text="{Binding ToolSetterProbeZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <WrapPanel>
+                                    <Button Content="Capture Setter X / Y / Z"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Margin="0,0,8,8"
+                                            ToolTip="Store the current machine X/Y/Z as the setter position and probe start Z."
+                                            Command="{Binding CaptureToolSetterPositionCommand}"/>
+                                    <Button Content="Capture Setter Z"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Margin="0,0,0,8"
+                                            ToolTip="Store only current machine Z as the setter probe start Z."
+                                            Command="{Binding CaptureToolSetterProbeZCommand}"/>
+                                </WrapPanel>
+                                <TextBlock Text="Setter Offset (mm)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                         Margin="0,0,0,8"
+                                         ToolTip="Saved setter-minus-reference Z offset. The Setter Offset routine calculates this automatically."
+                                         Text="{Binding ToolSetterOffsetInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Content="Setter Offset"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Run the guided reference and setter probe sequence to calculate the setter-minus-reference Z offset."
+                                        Command="{Binding CalibrateToolSetterOffsetCommand}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Probe Travel (mm)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeTravelInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Probe Feed (mm/min)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Fine Probe Feed (mm/min)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeFineFeedInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="0">
+                                <TextBlock Text="Pull-Off (mm)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Margin="0" Text="{Binding ProbeRetractInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="2">
+                                <TextBlock Text="Min Machine Z" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                         Margin="0"
+                                         ToolTip="Lowest machine Z allowed during downward probe moves. Leave blank to disable the Z travel guard."
+                                         Text="{Binding ProbeMinimumMachineZInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="4">
+                                <TextBlock Text="Z Clearance (mm)" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                         Margin="0"
+                                         ToolTip="Clearance held above Min Machine Z when probe travel is clamped."
+                                         Text="{Binding ProbeMinimumClearanceInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="{Binding MillToolProbeStatusText}"
+                                   Style="{StaticResource LabelTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,14,0,0"/>
+                        <TextBlock Text="Tip: probe cycles rapid to Safe Z, move to the selected plate or setter X/Y, rapid to that probe start Z, probe coarse, pull off, and probe fine. The fine touch is the value used for calibration and tool-length updates."
+                                   Style="{StaticResource LabelTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"/>
                     </StackPanel>
-                </Grid>
+                </ScrollViewer>
+            </Border>
+        </TabItem>
+
+        <TabItem Header="Part Probe" Style="{StaticResource PreviewTabItemStyle}">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
+                <controls:PartProbePane/>
+            </Border>
+        </TabItem>
+
+        <TabItem Header="Terminal" Style="{StaticResource PreviewTabItemStyle}">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
+                <controls:GrblTerminalPane/>
+            </Border>
+        </TabItem>
+
+        <TabItem Header="Settings" Style="{StaticResource PreviewTabItemStyle}">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
+                <controls:AppSettingsPane/>
             </Border>
         </TabItem>
     </TabControl>

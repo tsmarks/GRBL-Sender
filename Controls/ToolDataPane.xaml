@@ -209,5 +209,17 @@
                 </Grid>
             </Border>
         </TabItem>
+
+        <TabItem Header="Terminal" Style="{StaticResource PreviewTabItemStyle}">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
+                <controls:GrblTerminalPane/>
+            </Border>
+        </TabItem>
+
+        <TabItem Header="Settings" Style="{StaticResource PreviewTabItemStyle}">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,8,0,0">
+                <controls:AppSettingsPane/>
+            </Border>
+        </TabItem>
     </TabControl>
 </UserControl>
