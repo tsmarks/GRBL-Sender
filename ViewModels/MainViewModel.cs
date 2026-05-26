@@ -19,6 +19,8 @@ namespace GRBL_Lathe_Control.ViewModels;
 
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
+    private const double MinimumZProbeLimitClearance = 0.1d;
+
     private readonly Dispatcher _dispatcher;
     private readonly GrblClient _grblClient = new();
     private readonly MachineMode _machineMode;
@@ -138,6 +140,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private double? _lastPartProbeXPlus;
     private double? _lastPartProbeYMinus;
     private double? _lastPartProbeYPlus;
+    private PartProbeMeasuredEdge? _lastMeasuredPartEdge;
+    private PartProbeMeasuredEdge? _partProbeMeasureA;
+    private PartProbeMeasuredEdge? _partProbeMeasureB;
 
     public MainViewModel(MachineMode machineMode = MachineMode.Lathe)
     {
@@ -210,6 +215,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ProbeXYCornerCommand = new AsyncRelayCommand(ProbePartXYCornerAsync, () => IsMillMode && CanOffsetOrJog());
         ProbeHoleCenterCommand = new AsyncRelayCommand(ProbeHoleCenterAsync, () => IsMillMode && CanOffsetOrJog());
         CalculateOutsideCylinderCommand = new AsyncRelayCommand(CalculateOutsideCylinderFromTouchesAsync, () => IsMillMode);
+        SetPartProbeMeasureACommand = new RelayCommand(() => SetPartProbeMeasurePoint(isMeasureA: true), CanSetPartProbeMeasurePoint);
+        SetPartProbeMeasureBCommand = new RelayCommand(() => SetPartProbeMeasurePoint(isMeasureA: false), CanSetPartProbeMeasurePoint);
+        ClearPartProbeMeasurementCommand = new RelayCommand(ClearPartProbeMeasurement);
+        SetPartProbeMeasurementCenterZeroCommand = new AsyncRelayCommand(SetPartProbeMeasurementCenterZeroAsync, CanSetPartProbeMeasurementCenterZero);
         RunStraightEdgeProbeCommand = new AsyncRelayCommand(RunStraightEdgeProbeAsync, () => IsMillMode && CanOffsetOrJog());
         RunSurfaceGridProbeCommand = new AsyncRelayCommand(RunSurfaceGridProbeAsync, () => IsMillMode && CanOffsetOrJog());
         LoadProgramCommand = new RelayCommand(LoadProgram, () => !IsProgramRunning);
@@ -384,6 +393,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public AsyncRelayCommand ProbeHoleCenterCommand { get; }
 
     public AsyncRelayCommand CalculateOutsideCylinderCommand { get; }
+
+    public RelayCommand SetPartProbeMeasureACommand { get; }
+
+    public RelayCommand SetPartProbeMeasureBCommand { get; }
+
+    public RelayCommand ClearPartProbeMeasurementCommand { get; }
+
+    public AsyncRelayCommand SetPartProbeMeasurementCenterZeroCommand { get; }
 
     public AsyncRelayCommand RunStraightEdgeProbeCommand { get; }
 
@@ -578,6 +595,39 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             return
                 $"Plate reference work Z {_millProbeReferenceWorkZ.Value:0.###} mm | last probe work Z {_millLastProbeWorkZ.Value:0.###} mm.";
+        }
+    }
+
+    public string PartProbeMeasurementText
+    {
+        get
+        {
+            var lastText = _lastMeasuredPartEdge is null
+                ? "Last edge: none yet. Probe an X or Y edge first."
+                : $"Last edge: {_lastMeasuredPartEdge.Label} surface at machine {_lastMeasuredPartEdge.Axis} {_lastMeasuredPartEdge.MachineSurface:0.###} mm.";
+            var measureAText = _partProbeMeasureA is null
+                ? "A: not set"
+                : $"A: {_partProbeMeasureA.Label} machine {_partProbeMeasureA.Axis} {_partProbeMeasureA.MachineSurface:0.###}";
+            var measureBText = _partProbeMeasureB is null
+                ? "B: not set"
+                : $"B: {_partProbeMeasureB.Label} machine {_partProbeMeasureB.Axis} {_partProbeMeasureB.MachineSurface:0.###}";
+
+            if (_partProbeMeasureA is null || _partProbeMeasureB is null)
+            {
+                return $"{lastText}\n{measureAText} | {measureBText}";
+            }
+
+            if (!string.Equals(_partProbeMeasureA.Axis, _partProbeMeasureB.Axis, StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{lastText}\n{measureAText} | {measureBText}\nMeasure A and B are on different axes. Probe two X edges or two Y edges.";
+            }
+
+            var centerMachine = GetPartProbeMeasurementCenterMachine();
+            var centerWork = GetWorkCoordinateAtMachinePosition(_partProbeMeasureA.Axis, centerMachine);
+            var distance = Math.Abs(_partProbeMeasureB.MachineSurface - _partProbeMeasureA.MachineSurface);
+            return
+                $"{lastText}\n{measureAText} | {measureBText}\n" +
+                $"{_partProbeMeasureA.Axis} distance {distance:0.###} mm | center machine {_partProbeMeasureA.Axis} {centerMachine:0.###} | current work {_partProbeMeasureA.Axis} {centerWork:0.###}.";
         }
     }
 
@@ -1764,6 +1814,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         AddLog($"Starting part probe {normalizedAxis}{FormatDirection(direction)} edge.");
         var touch = await ExecutePartProbeTouchAsync(normalizedAxis, direction, travel, feed, fineFeed, retract);
         StoreDirectionalPartTouch(normalizedAxis, direction, touch);
+        StoreMeasuredPartEdge(normalizedAxis, direction, touch, tipRadius);
 
         if (PartProbeSetZeroAfterProbe)
         {
@@ -3944,6 +3995,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 WorkBInput = status.WorkB.Value.ToString("0.###", CultureInfo.InvariantCulture);
             }
 
+            if (_partProbeMeasureA is not null || _partProbeMeasureB is not null || _lastMeasuredPartEdge is not null)
+            {
+                OnPropertyChanged(nameof(PartProbeMeasurementText));
+            }
+
             XLimitPinHigh = status.XLimitPinHigh;
             YLimitPinHigh = status.YLimitPinHigh;
             ZLimitPinHigh = status.ZLimitPinHigh;
@@ -4115,6 +4171,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ProbeXYCornerCommand.RaiseCanExecuteChanged();
         ProbeHoleCenterCommand.RaiseCanExecuteChanged();
         CalculateOutsideCylinderCommand.RaiseCanExecuteChanged();
+        SetPartProbeMeasureACommand.RaiseCanExecuteChanged();
+        SetPartProbeMeasureBCommand.RaiseCanExecuteChanged();
+        SetPartProbeMeasurementCenterZeroCommand.RaiseCanExecuteChanged();
         RunStraightEdgeProbeCommand.RaiseCanExecuteChanged();
         RunSurfaceGridProbeCommand.RaiseCanExecuteChanged();
         LoadProgramCommand.RaiseCanExecuteChanged();
@@ -4344,36 +4403,51 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool TryGetSafeDownwardZProbeTravel(double requestedTravel, string probeLabel, out double safeTravel)
     {
         safeTravel = Math.Abs(requestedTravel);
+        var requestedProbeDistance = -safeTravel;
+        if (!TryGetSafeZProbeDistance(requestedProbeDistance, probeLabel, out var safeProbeDistance))
+        {
+            return false;
+        }
+
+        safeTravel = Math.Abs(safeProbeDistance);
+        return safeTravel > 0.001d;
+    }
+
+    private bool TryGetSafeZProbeDistance(double requestedProbeDistance, string probeLabel, out double safeProbeDistance)
+    {
+        safeProbeDistance = requestedProbeDistance;
         if (!TryGetZProbeSafetySettings(out var minimumMachineZ, out var clearance, out var safetyEnabled))
         {
             return false;
         }
 
-        if (!safetyEnabled)
+        if (!safetyEnabled || requestedProbeDistance >= 0)
         {
             return true;
         }
 
         var lowestAllowedZ = minimumMachineZ + clearance;
-        var availableTravel = MachineZ - lowestAllowedZ;
+        var currentMachineZ = MachineZ;
+        var requestedTargetZ = currentMachineZ + requestedProbeDistance;
+        var availableTravel = currentMachineZ - lowestAllowedZ;
         if (availableTravel <= 0.001d)
         {
             AddLog(
-                $"{probeLabel} blocked: current machine Z {MachineZ:0.###} mm is at or below the guarded minimum " +
+                $"{probeLabel} blocked: current machine Z {currentMachineZ:0.###} mm is at or below the guarded minimum " +
                 $"{lowestAllowedZ:0.###} mm.");
             return false;
         }
 
-        if (safeTravel > availableTravel)
+        if (requestedTargetZ < lowestAllowedZ)
         {
-            var originalTravel = safeTravel;
-            safeTravel = availableTravel;
+            var originalProbeDistance = requestedProbeDistance;
+            safeProbeDistance = lowestAllowedZ - currentMachineZ;
             AddLog(
-                $"{probeLabel} travel reduced from {originalTravel:0.###} mm to {safeTravel:0.###} mm " +
-                $"to stop {clearance:0.###} mm above the configured minimum Z ({minimumMachineZ:0.###} mm).");
+                $"{probeLabel} command reduced from Z{originalProbeDistance:0.###} to Z{safeProbeDistance:0.###} " +
+                $"so the target stays {clearance:0.###} mm above minimum machine Z {minimumMachineZ:0.###} mm.");
         }
 
-        return safeTravel > 0.001d;
+        return Math.Abs(safeProbeDistance) > 0.001d;
     }
 
     private bool TryGetZProbeSafetySettings(out double minimumMachineZ, out double clearance, out bool safetyEnabled)
@@ -4397,6 +4471,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             ShowValidationError("Enter a non-negative Z probe clearance.");
             return false;
+        }
+
+        if (clearance < MinimumZProbeLimitClearance)
+        {
+            AddLog(
+                $"Z probe clearance increased from {clearance:0.###} mm to {MinimumZProbeLimitClearance:0.###} mm so -Z probe moves stop short of the machine limit.");
+            clearance = MinimumZProbeLimitClearance;
         }
 
         return true;
@@ -4428,6 +4509,153 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         CalculateOutsideCylinderCommand.RaiseCanExecuteChanged();
+    }
+
+    private void StoreMeasuredPartEdge(string axisLetter, int direction, ProbeWorkTouch touch, double tipRadius)
+    {
+        var normalizedAxis = axisLetter.ToUpperInvariant();
+        var machineSurface = GetMachineAxis(touch, normalizedAxis) + (direction < 0 ? -tipRadius : tipRadius);
+        var workSurface = GetWorkAxis(touch, normalizedAxis) + (direction < 0 ? -tipRadius : tipRadius);
+        _lastMeasuredPartEdge = new PartProbeMeasuredEdge(
+            normalizedAxis,
+            direction,
+            machineSurface,
+            workSurface,
+            $"{normalizedAxis}{FormatDirection(direction)}");
+        OnPartProbeMeasurementChanged();
+    }
+
+    private void SetPartProbeMeasurePoint(bool isMeasureA)
+    {
+        if (_lastMeasuredPartEdge is null)
+        {
+            ShowValidationError("Probe an X or Y edge before setting a measure point.");
+            return;
+        }
+
+        if (isMeasureA)
+        {
+            _partProbeMeasureA = _lastMeasuredPartEdge;
+        }
+        else
+        {
+            _partProbeMeasureB = _lastMeasuredPartEdge;
+        }
+
+        OnPartProbeMeasurementChanged();
+        AddLog(
+            $"Part probe measure {(isMeasureA ? "A" : "B")} set from {_lastMeasuredPartEdge.Label} at machine {_lastMeasuredPartEdge.Axis} {_lastMeasuredPartEdge.MachineSurface:0.###} mm.");
+    }
+
+    private bool CanSetPartProbeMeasurePoint()
+    {
+        return IsMillMode && _lastMeasuredPartEdge is not null;
+    }
+
+    private void ClearPartProbeMeasurement()
+    {
+        _partProbeMeasureA = null;
+        _partProbeMeasureB = null;
+        OnPartProbeMeasurementChanged();
+        AddLog("Part probe edge measurement cleared.");
+    }
+
+    private async Task SetPartProbeMeasurementCenterZeroAsync()
+    {
+        if (!TryGetValidPartProbeMeasurement(out var axis, out var centerMachine, out var distance))
+        {
+            return;
+        }
+
+        var currentWorkValueForCenterZero = axis == "X"
+            ? MachineX - centerMachine
+            : MachineY - centerMachine;
+
+        if (axis == "X")
+        {
+            await SetWorkCoordinateAsync(xValue: currentWorkValueForCenterZero);
+        }
+        else
+        {
+            await SetWorkCoordinateAsync(yValue: currentWorkValueForCenterZero);
+        }
+
+        PartProbeResultText =
+            $"{axis} feature center zero set from edge measure. Distance {distance:0.###} mm, center machine {axis} {centerMachine:0.###} mm.";
+        AddLog(PartProbeResultText);
+        OnPartProbeMeasurementChanged();
+    }
+
+    private bool CanSetPartProbeMeasurementCenterZero()
+    {
+        return IsMillMode &&
+               CanOffsetOrJog() &&
+               TryGetValidPartProbeMeasurement(showValidation: false, out _, out _, out _);
+    }
+
+    private bool TryGetValidPartProbeMeasurement(out string axis, out double centerMachine, out double distance)
+    {
+        return TryGetValidPartProbeMeasurement(showValidation: true, out axis, out centerMachine, out distance);
+    }
+
+    private bool TryGetValidPartProbeMeasurement(bool showValidation, out string axis, out double centerMachine, out double distance)
+    {
+        axis = string.Empty;
+        centerMachine = 0;
+        distance = 0;
+
+        if (_partProbeMeasureA is null || _partProbeMeasureB is null)
+        {
+            if (showValidation)
+            {
+                ShowValidationError("Set both Measure A and Measure B from probed edges before setting center zero.");
+            }
+
+            return false;
+        }
+
+        if (!string.Equals(_partProbeMeasureA.Axis, _partProbeMeasureB.Axis, StringComparison.OrdinalIgnoreCase))
+        {
+            if (showValidation)
+            {
+                ShowValidationError("Measure A and Measure B must be on the same axis.");
+            }
+
+            return false;
+        }
+
+        axis = _partProbeMeasureA.Axis;
+        centerMachine = GetPartProbeMeasurementCenterMachine();
+        distance = Math.Abs(_partProbeMeasureB.MachineSurface - _partProbeMeasureA.MachineSurface);
+        return true;
+    }
+
+    private double GetPartProbeMeasurementCenterMachine()
+    {
+        if (_partProbeMeasureA is null || _partProbeMeasureB is null)
+        {
+            return 0;
+        }
+
+        return (_partProbeMeasureA.MachineSurface + _partProbeMeasureB.MachineSurface) / 2d;
+    }
+
+    private double GetWorkCoordinateAtMachinePosition(string axisLetter, double machinePosition)
+    {
+        return axisLetter.ToUpperInvariant() switch
+        {
+            "X" => machinePosition + (WorkX - MachineX),
+            "Y" => machinePosition + (WorkY - MachineY),
+            _ => machinePosition
+        };
+    }
+
+    private void OnPartProbeMeasurementChanged()
+    {
+        OnPropertyChanged(nameof(PartProbeMeasurementText));
+        SetPartProbeMeasureACommand.RaiseCanExecuteChanged();
+        SetPartProbeMeasureBCommand.RaiseCanExecuteChanged();
+        SetPartProbeMeasurementCenterZeroCommand.RaiseCanExecuteChanged();
     }
 
     private double GetCompensatedSurfaceCoordinate(string axisLetter, int direction, ProbeWorkTouch touch, double tipRadius)
@@ -4467,6 +4695,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "Z" => touch.WorkZ,
             "A" => touch.WorkA,
             "B" => touch.WorkB,
+            _ => 0
+        };
+    }
+
+    private static double GetMachineAxis(ProbeWorkTouch touch, string axisLetter)
+    {
+        return axisLetter.ToUpperInvariant() switch
+        {
+            "X" => touch.MachineX,
+            "Y" => touch.MachineY,
+            "Z" => touch.MachineZ,
+            "A" => touch.MachineA,
+            "B" => touch.MachineB,
             _ => 0
         };
     }
@@ -4899,4 +5140,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         double WorkZ,
         double WorkA,
         double WorkB);
+
+    private sealed record PartProbeMeasuredEdge(
+        string Axis,
+        int Direction,
+        double MachineSurface,
+        double WorkSurfaceAtTouch,
+        string Label);
 }
